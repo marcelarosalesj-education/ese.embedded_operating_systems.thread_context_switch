@@ -183,7 +183,7 @@ int main(void)
 
 	NVIC_SetPriority(PendSV_IRQn, 0xF); // Set PendSV to lowest possible priority
 	SysTick_Config(SystemCoreClock/SYSTICK_FREQUENCY_HZ); //20 hertz is 50 ms for a systick.
-
+	PRINTF("thread_start\r\n");
 	thread_start();
 
 	return 0;

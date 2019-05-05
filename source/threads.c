@@ -61,34 +61,25 @@ void thread_start()
 	lastTask = 0;
 
 	/* Save kernel context */
-	asm volatile("\n");
-	/* save kernel state */
 	__asm ("MRS    IP, PSR \n");          //ip and/or IP - Intra procedure call scratch register. This is a synonym for R12.
 	__asm ("PUSH   {R4, R5, R6, R7, R8, R9, R10, R11, IP, LR} \n");
 
-	/* To bridge the variable in C and the register in ASM,
-	 * move the task's stack pointer address into r0.
-	 * http://www.ethernut.de/en/documents/arm-inline-asm.html
-	 */
-	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
-
 	/* Load user task's context and jump to the task */
-
-	/* load user state */
+	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
 	__asm ("LDMIA  R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
-	__asm ("MSR    PSP, R0 \n");
-	/* check the situation and determine the transition */
-	__asm ("MOV    R0, #0xFFFFFFFD \n");
-	__asm ("CMP    LR, R0 \n");          // LR - 0xFFFFFFFD
+	//__asm ("MSR    PSP, R0 \n");
 
-	/* if "LR" does not point to exception return, then switch to process stack */
-	__asm ("ITTT   NE \n");              // "NE" - Not equal - Z flag is cleared
-	__asm ("MOVNE  R0, #2 \n");
-	__asm ("MSRNE  CONTROL, R0 \n");
-	__asm ("ISBNE \n");
+	/* Put stack into PSP */
+	asm volatile("MSR     PSP, %0\n" : : "r" (tasks[lastTask].stack));
+	//__asm ("MSR    PSP, R10 \n");
 
-	asm volatile("\n");
+	/* Set SPSEL to PSP */
+	__asm ("MRS R0, CONTROL \n");
+	__asm ("ORRS R0, R0, #0x2 \n");
+	__asm ("MSR  CONTROL, R0 \n");
+	__asm ("ISB \n");
 
+	/* Jump to LR */
 	asm volatile("BX      LR\n");
 }
 
