@@ -64,20 +64,35 @@ void thread_start()
 	__asm ("MRS    IP, PSR \n");          //ip and/or IP - Intra procedure call scratch register. This is a synonym for R12.
 	__asm ("PUSH   {R4, R5, R6, R7, R8, R9, R10, R11, IP, LR} \n");
 
-	/* Load user task's context and jump to the task */
+	/* Load user task's context from the stack */
 	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
 	__asm ("LDMIA  R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
-	//__asm ("MSR    PSP, R0 \n");
 
-	/* Put stack into PSP */
-	asm volatile("MSR     PSP, %0\n" : : "r" (tasks[lastTask].stack));
-	//__asm ("MSR    PSP, R10 \n");
+
+	/*
+	 * Put stack into PSP
+	 * I don't know why, but usertask's stack is left out from previous instruction.
+	 * Fortunately, the LDMIA instruction leaves in R0 the next memory address
+	 * which in this case has the usertask's stack.
+	 * So we'll put it in PSP.
+	 * Note: It should be on Register 10. What happened?
+	 * */
+	__asm ("MSR    PSP, R0 \n");
+
 
 	/* Set SPSEL to PSP */
 	__asm ("MRS R0, CONTROL \n");
 	__asm ("ORRS R0, R0, #0x2 \n");
 	__asm ("MSR  CONTROL, R0 \n");
 	__asm ("ISB \n");
+
+	/* Load into R0 the usertask's stack
+	 * R0 is the parameter that task1 will get.
+	 * The memory pointing to usertask's stack  in in PSP, so we put it
+	 * in R10 in order to load the value in that memory into R0.
+	 * */
+	__asm ("MRS R10, PSP \n");
+	__asm ("LDMIA  R10!, {R0} \n");
 
 	/* Jump to LR */
 	asm volatile("BX      LR\n");
