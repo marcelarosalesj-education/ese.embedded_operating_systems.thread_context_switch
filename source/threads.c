@@ -23,13 +23,8 @@ static int first = 1;
 void PendSV_Handler( void )
 {
 	/* Save the old task's context */
-	asm volatile("");
-	/* save user state */
-	__asm("MRS     R0, PSP \n");
-	__asm("STMDB   R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
-
-	/* To get the task pointer address from result r0 */
-	asm volatile("MOV      %0, R0\n" : "=r" (tasks[lastTask].stack));
+	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
+	__asm("STMIA   R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
 
 	/* Find a new task to run */
 	while (1) {
@@ -40,11 +35,13 @@ void PendSV_Handler( void )
 			/* Move the task's stack pointer address into r0 */
 			asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
 
-			/* Restore the new task's context and jump to the task */
-			asm volatile("");
-			__asm("POP     {R4, R5, R6, R7, R8, R9, R10, R11, IP, LR}  \n");
-			__asm("MSR     PSR_NZCVQ, IP \n");
+			/* Restore the new task's context */
+			__asm ("LDMIA  R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
+			__asm ("MSR    PSP, R0 \n");
+			__asm ("MRS R10, PSP \n");
+			__asm ("LDMIA  R10!, {R0} \n");
 
+			/* Jump to the task*/
 			asm volatile("BX      LR\n");
 		}
 	}
