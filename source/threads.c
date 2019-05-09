@@ -23,8 +23,9 @@ static int first = 1;
 void PendSV_Handler( void )
 {
 	/* Save the old task's context */
-	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
-	__asm("STMIA   R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
+	asm volatile("MRS R0, PSP \n");
+	asm volatile("STMDB   R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
+	asm volatile("MOV %0, R0 \n" : "=r" (tasks[lastTask].stack));
 
 	/* Find a new task to run */
 	while (1) {
@@ -33,16 +34,14 @@ void PendSV_Handler( void )
 			lastTask = 0;
 		if (tasks[lastTask].in_use) {
 			/* Move the task's stack pointer address into r0 */
-			asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
+			asm volatile("MOV R0, %0\n" : : "r" (tasks[lastTask].stack));
 
 			/* Restore the new task's context */
-			__asm ("LDMIA  R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
-			__asm ("MSR    PSP, R0 \n");
-			__asm ("MRS R10, PSP \n");
-			__asm ("LDMIA  R10!, {R0} \n");
+			asm volatile("LDMIA R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
+			asm volatile("MSR PSP, R0 \n");
 
 			/* Jump to the task*/
-			asm volatile("BX      LR\n");
+			asm volatile("BX LR\n");
 		}
 	}
 }
@@ -58,38 +57,37 @@ void thread_start()
 	lastTask = 0;
 
 	/* Save kernel context */
-	__asm ("MRS    IP, PSR \n");          //ip and/or IP - Intra procedure call scratch register. This is a synonym for R12.
-	__asm ("PUSH   {R4, R5, R6, R7, R8, R9, R10, R11, IP, LR} \n");
+	asm volatile("MRS    IP, PSR \n");
+	asm volatile("PUSH   {R4, R5, R6, R7, R8, R9, R10, R11, IP, LR} \n");
 
 	/* Load user task's context from the stack */
 	asm volatile("MOV     R0, %0\n" : : "r" (tasks[lastTask].stack));
-	__asm ("LDMIA  R0!, {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
 
-
-	/*
-	 * Put stack into PSP
-	 * I don't know why, but usertask's stack is left out from previous instruction.
-	 * Fortunately, the LDMIA instruction leaves in R0 the next memory address
-	 * which in this case has the usertask's stack.
-	 * So we'll put it in PSP.
-	 * Note: It should be on Register 10. What happened?
-	 * */
-	__asm ("MSR    PSP, R0 \n");
-
+	/* Put stack into PSP */
+	asm volatile("MSR    PSP, R0 \n");
 
 	/* Set SPSEL to PSP */
-	__asm ("MRS R0, CONTROL \n");
-	__asm ("ORRS R0, R0, #0x2 \n");
-	__asm ("MSR  CONTROL, R0 \n");
-	__asm ("ISB \n");
+	asm volatile("MRS R0, CONTROL \n");
+	asm volatile("ORRS R0, R0, #0x2 \n");
+	asm volatile("MSR  CONTROL, R0 \n");
+	asm volatile("ISB \n");
 
-	/* Load into R0 the usertask's stack
-	 * R0 is the parameter that task1 will get.
-	 * The memory pointing to usertask's stack  in in PSP, so we put it
-	 * in R10 in order to load the value in that memory into R0.
+	/* Pop from Process Stack Pointer the Registers
+	 * stack[0] - R4
+	 * stack[1] - R5
+	 * stack[2] - R6
+	 * stack[3] - R7
+	 * stack[4] - R8
+	 * stack[5] - R9
+	 * stack[6] - R10
+	 * stack[7] - R11
+	 * stack[8] - LR
 	 * */
-	__asm ("MRS R10, PSP \n");
-	__asm ("LDMIA  R10!, {R0} \n");
+	asm volatile("POP {R4, R5, R6, R7, R8, R9, R10, R11, LR} \n");
+	/* Pop again. R0 is used as the first parameter in a function.
+	 * stack[9] - userdata
+	 * */
+	asm volatile("POP {R0} \n");
 
 	/* Jump to LR */
 	asm volatile("BX      LR\n");
