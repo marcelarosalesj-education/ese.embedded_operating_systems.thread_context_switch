@@ -20,3 +20,59 @@
   -DB - Decrement Before.  
   -IA - Increment After.  
   "The PUSH and POP instructions can be expressed in this form. See PUSH and POP for details."
+
+* Working implementation
+  ```
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task4: Running...4
+  Task4: Running...4
+  Task4: Running...4
+  Task4: Running...4
+  Task4: Running...4
+  Task4: Running...4
+  Task4: Running...4
+  Task5: Running...5
+  Task5: Running...5
+  Task5: Running...5
+  Task5: Running...5
+  Task5: Running...5
+  Task5: Running...5
+  Task5: Running...5
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1
+  Task1: Running...1Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task2: Running...2
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  Task3: Running...3
+  ```
